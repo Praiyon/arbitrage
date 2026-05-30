@@ -8,7 +8,9 @@ arbs.jsonl
 
 # Discovery captures (regenerated, not source)
 discovery/*.log
-discovery/fixtures/
+discovery/responses/
+# discovery/fixtures/ is tracked — those are the canonical
+# fixtures used by feature 03 parser tests.
 
 # OS / editor
 .DS_Store

@@ -8,7 +8,8 @@
     "dev": "tsx src/index.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "discover": "tsx discovery/harness.ts"
   },
   "dependencies": {
     "playwright": "^1.49.0"
