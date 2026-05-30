@@ -29,7 +29,7 @@ https://sportsbook-nash.draftkings.com/sites/{REGION}/api/sportscontent/controld
 
 - `REGION` observed: `CA-ON-SB` (Ontario). Should be `US-{STATE}-SB` for a US user.
 - MLB filter: `templateVars=84240` (84240 = MLB league ID)
-- Moneyline filter: `subCategoryId eq '4519'` (4519 = moneyline subcategory)
+- Subcategory: `subCategoryId eq '4519'` is **"Game Lines"** — includes Moneyline, Run Line, and Total. Not a moneyline-only filter; the parser must further select by `market.name === 'Moneyline'`.
 - Filter regex (loose): `/sportsbook-nash\.draftkings\.com\/sites\/[^/]+\/api\/sportscontent\/controldata\/league\/leagueSubcategory\/v1\/markets/`
 
 ### FD
