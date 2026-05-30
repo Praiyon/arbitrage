@@ -1,0 +1,20 @@
+node_modules/
+dist/
+*.log
+
+# Run artifacts
+prices.jsonl
+arbs.jsonl
+
+# Discovery captures (regenerated, not source)
+discovery/*.log
+discovery/fixtures/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local secrets (none expected, but defensive)
+.env
+.env.local
