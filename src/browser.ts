@@ -19,6 +19,7 @@ export type RuntimeDeps = {
   store: JsonlStore
   gameStore: GameStore
   onArbHit: (hit: ArbHit) => void
+  onPriceRow?: (book: Book) => void
   onLog?: (msg: string) => void
   now?: () => number
 }
@@ -58,6 +59,7 @@ export function processIntercept(
       homePriceDec: rec.homePriceDec,
       awayPriceDec: rec.awayPriceDec,
     })
+    deps.onPriceRow?.(rec.book)
     ingested++
 
     for (const hit of evaluate(game, now)) {

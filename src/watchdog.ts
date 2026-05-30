@@ -22,6 +22,7 @@ export type WatchdogRuntime = {
 export type WatchdogDeps = {
   runtime: WatchdogRuntime
   onAlarm: (book: Book, reason: string) => void
+  onReload?: (book: Book, reason: string) => void
   onLog?: (msg: string) => void
   now?: () => number
 }
@@ -143,6 +144,7 @@ export class Watchdog {
     this.lastReloadAt.set(book, this.now())
     this.didReload.set(book, true)
     this.log(`[watchdog] ${book}: reload (${reason})`)
+    this.deps.onReload?.(book, reason)
     try {
       await page.reload({ waitUntil: 'domcontentloaded', timeout: 30_000 })
     } catch (e) {
