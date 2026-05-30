@@ -20,3 +20,11 @@ discovery/responses/
 # Local secrets (none expected, but defensive)
 .env
 .env.local
+
+# Persistent browser profile (cookies, local storage, PX trust tokens).
+# Per-user state, not source.
+browser-profile/
+
+# Scratch smoke scripts used to debug feature 07 (not part of POC build).
+smoke.ts
+smoke-fd-probe.ts

@@ -1,7 +1,14 @@
 import type { PriceRecord } from '../types.js'
 
+// Two endpoints carry MLB market data on FD:
+//   - content-managed-page?customPageId=mlb  → one-shot on page load, ~2.4MB
+//     containing all visible MLB markets (the real source of truth)
+//   - fixedodds/getMarketPrices             → incremental poll, ~7s cadence,
+//     returns empty when the page has nothing in its visible-markets set
+// Pattern matches either; parseFd handles empty payloads as []  so a delta
+// poll with no changes is just a no-op.
 export const FD_URL_PATTERN =
-  /smp\.[a-z]{2}\.sportsbook\.fanduel\.com\/api\/sports\/fixedodds\/readonly\/v1\/getMarketPrices/
+  /(api\.sportsbook\.fanduel\.com\/sbapi\/content-managed-page.*customPageId=mlb|smp\.[a-z]{2}\.sportsbook\.fanduel\.com\/api\/sports\/fixedodds\/readonly\/v1\/getMarketPrices)/
 
 // MLB eventTypeId on FD's catalog. Used in conjunction with marketType
 // to isolate MLB moneylines from other sports' moneylines and from

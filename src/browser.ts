@@ -1,4 +1,8 @@
-import { chromium, type Browser, type BrowserContext, type Page } from 'playwright'
+import { chromium } from 'playwright-extra'
+import type { BrowserContext, Page } from 'playwright'
+import stealth from 'puppeteer-extra-plugin-stealth'
+chromium.use(stealth())
+
 import { evaluate, type ArbHit } from './arb.js'
 import type { GameStore } from './matcher.js'
 import type { JsonlStore } from './store.js'
@@ -65,24 +69,41 @@ export function processIntercept(
   return { ingested, arbs }
 }
 
+export type BrowserOpts = {
+  // Persistent profile directory. Cookies/state survive between runs so
+  // a manually-solved PerimeterX challenge in `warmup-fd.ts` keeps the
+  // browser "trusted" on subsequent automated runs.
+  profileDir?: string
+}
+
 export class BrowserRuntime {
-  private browser: Browser | undefined
-  private contexts = new Map<Book, BrowserContext>()
+  private context: BrowserContext | undefined
   private pages = new Map<Book, Page>()
   private lastIntercept = new Map<Book, number>()
   private geoSeen = new Map<Book, string>()
   private geoCheckTimer: NodeJS.Timeout | undefined
+  private profileDir: string
 
-  constructor(private deps: RuntimeDeps, private books: BookConfig[]) {}
+  constructor(
+    private deps: RuntimeDeps,
+    private books: BookConfig[],
+    opts: BrowserOpts = {},
+  ) {
+    this.profileDir = opts.profileDir ?? './browser-profile'
+  }
 
   async start(): Promise<void> {
-    const browser = await chromium.launch({ headless: false })
-    this.browser = browser
+    // Single persistent context shared across books — DK doesn't need
+    // persistence but it doesn't hurt, and one chromium window with two
+    // tabs is a simpler operator UX than two windows.
+    const context = await chromium.launchPersistentContext(this.profileDir, {
+      headless: false,
+      viewport: { width: 1280, height: 900 },
+    })
+    this.context = context
 
     for (const cfg of this.books) {
-      const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } })
-      this.contexts.set(cfg.book, ctx)
-      const page = await ctx.newPage()
+      const page = await context.newPage()
       this.pages.set(cfg.book, page)
       this.lastIntercept.set(cfg.book, 0)
       this.attachHandler(cfg, page)
@@ -90,6 +111,7 @@ export class BrowserRuntime {
       try {
         await page.goto(cfg.marketsUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 })
         this.log(`[runtime] ${cfg.book}: navigated to ${cfg.marketsUrl}`)
+        await this.settle(page, cfg.book)
       } catch (e) {
         this.log(`[runtime] ${cfg.book}: navigation failed: ${(e as Error).message}`)
       }
@@ -97,6 +119,24 @@ export class BrowserRuntime {
 
     // Report geo (or warn) 30s after start
     this.geoCheckTimer = setTimeout(() => this.reportGeo(), 30_000)
+  }
+
+  // Some books (notably FD) only fetch market prices for events the page-side
+  // state has already loaded into its visible list. Without user interaction
+  // the page polls its odds endpoint forever with an empty request body and
+  // gets back empty payloads. A few post-navigation scrolls trigger the lazy
+  // load. Harmless on books that don't need it (DK).
+  private async settle(page: Page, book: Book): Promise<void> {
+    await page.waitForTimeout(2000)
+    for (let i = 0; i < 5; i++) {
+      try {
+        await page.mouse.wheel(0, 800)
+      } catch {
+        break
+      }
+      await page.waitForTimeout(1000)
+    }
+    this.log(`[runtime] ${book}: settled`)
   }
 
   private attachHandler(cfg: BookConfig, page: Page): void {
@@ -148,9 +188,9 @@ export class BrowserRuntime {
 
   async stop(): Promise<void> {
     if (this.geoCheckTimer) clearTimeout(this.geoCheckTimer)
-    if (this.browser) {
-      await this.browser.close().catch(() => {})
-      this.browser = undefined
+    if (this.context) {
+      await this.context.close().catch(() => {})
+      this.context = undefined
     }
   }
 
