@@ -25,6 +25,7 @@ discovery/responses/
 # Per-user state, not source.
 browser-profile/
 
-# Scratch smoke scripts used to debug feature 07 (not part of POC build).
+# Scratch smoke scripts used to debug feature 07/08 (not part of POC build).
 smoke.ts
 smoke-fd-probe.ts
+smoke-watchdog.ts
